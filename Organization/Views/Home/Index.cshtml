@@ -1,0 +1,95 @@
+﻿@{
+    ViewData["Title"] = "Home Page";
+}
+
+
+<div class="row">
+    <div class="col-lg-2">
+        @(Html.Kendo().TreeView()
+                        .HtmlAttributes(new { style = "font-size: 14px;" })
+                            .Name("treeview")
+                            .TemplateId("treeview-template")
+                            .Events(events => events
+                            .Select("onSelect")
+                            )
+                            .DataSource(dataSource => dataSource
+                            .Read(read => read.Action("GetTree", "Home"))
+                            )
+        )
+    </div>
+    <div class="col-lg-8">
+        @(Html.Kendo().Grid<EquipmentViewModel>()
+                   .HtmlAttributes(new { style = "font-size: 14px;" })
+                   .Name("Grid")
+                   .Columns(col =>
+                   {
+                       col.Bound(x => x.Name);
+                       col.Bound(x => x.Count);
+                       col.Command(command =>
+                       {
+                           command.Edit().Text(" ").UpdateText("Сохранить").CancelText("Отмена");
+                           command.Destroy().Text(" ");
+                       }).Width(160);
+                   })
+
+                   .Editable(editable => editable.Mode(GridEditMode.PopUp).Window(window => window.Width(480)))
+                   .DataSource(dataSource => dataSource
+                   .Ajax()
+                   .Model(model => model.Id(p => p.Id))
+                   .Read(read => read.Action("Grid", "Home").Data("Read_data"))
+                   .Create(create => create.Action("Create", "Home").Data("DataCreate"))
+                   .Update(update => update.Action("Update", "Home"))
+                   .Destroy(destroy => destroy.Action("Destroy", "Home"))
+                   )
+        )
+    </div>
+</div>
+
+
+
+<script id="treeview-template" type="text/kendo-ui-template">
+    #: item.text #
+    # if (item.flag>0) { #
+    <span class='glyphicon glyphicon-ok-circle' style="margin-left: 5px;"></span>
+    # }
+    else{#
+    <span class=' glyphicon glyphicon-remove-circle' style="margin-left: 5px;"></span>
+    #}#
+</script>
+
+<script>
+
+    var Id = 0;
+    var Level = 0;
+
+    function onSelect(e) {
+        var treeview = $("#treeview").data("kendoTreeView");
+        var dataItem = treeview.dataItem(e.node);
+        Id = dataItem.id;
+        Level = dataItem.levelTree;
+
+        $("#Grid").data("kendoGrid").dataSource.read();
+
+        if (Level == 2) {
+            $("#Grid").data("kendoGrid").setOptions({
+                toolbar: [{ name: "add", text: "Добавить", data: "DataCreate" }]
+            });
+        } else {
+            $("#Grid").data("kendoGrid").setOptions({
+                toolbar: []
+            });
+        }
+
+    }
+
+    function Read_data() {
+        return { Id: Id, level: Level };
+
+    }
+    function DataCreate() {
+        return { OffId: Id };
+
+    }
+
+</script>
+
